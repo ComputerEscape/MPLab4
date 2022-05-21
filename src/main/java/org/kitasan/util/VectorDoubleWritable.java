@@ -33,7 +33,7 @@ public class VectorDoubleWritable extends Vector<DoubleWritable> implements Writ
         if (vecSize != size()) throw new RuntimeException("Vector dimensions are not equal");
         for (int i = 0; i < vecSize; ++i) {
             DoubleWritable d = get(i);
-            d.set(d.get()*vec.get(i).get());
+            d.set(d.get()+vec.get(i).get());
         }
     }
 
@@ -101,7 +101,7 @@ public class VectorDoubleWritable extends Vector<DoubleWritable> implements Writ
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < size(); ++i) {
             if (i > 0) sb.append(',');
-            sb.append(String.valueOf(get(i).get()));
+            sb.append(String.format("%.5f", get(i).get()));
         }
         return sb.toString();
     }

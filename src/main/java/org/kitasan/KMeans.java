@@ -2,20 +2,41 @@ package org.kitasan;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.kitasan.map.KMeansMapper;
+import org.kitasan.reduce.KMeansCombiner;
+import org.kitasan.reduce.KMeansReducer;
 import org.kitasan.util.CenterFileOperation;
+import org.kitasan.util.PairVectorDoubleInt;
 import org.kitasan.util.VectorDoubleWritable;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class KMeans {
 
-    private static Job getKMeansJob(Configuration conf, Path centerIn, Path pointIn, Path out) throws IOException {
+    private static Job getKMeansJob(Configuration conf, Path centerIn, Path pointIn, Path out) throws IOException, URISyntaxException {
         Job job = new Job(conf, "K-Means");
-        //TODO
+        job.setJarByClass(KMeans.class);
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(PairVectorDoubleInt.class);
+        job.setMapperClass(KMeansMapper.class);
+        job.setCombinerClass(KMeansCombiner.class);
+        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputValueClass(VectorDoubleWritable.class);
+        job.setReducerClass(KMeansReducer.class);
+        FileInputFormat.addInputPath(job, pointIn);
+        FileOutputFormat.setOutputPath(job, out);
+        job.addCacheFile(new URI(centerIn.toString()));
         return job;
     }
 
@@ -45,7 +66,7 @@ public class KMeans {
                 clearKMeansOut(conf, finalKMeansOut);
                 Job kMeansJob = getKMeansJob(conf, tempKMeansOut, pointIn, finalKMeansOut);
                 boolean flag = kMeansJob.waitForCompletion(true);
-                if (flag) System.exit(1);
+                if (!flag) System.exit(1);
             } while(!check(conf, tempKMeansOut, finalKMeansOut));
             Job clusterJob = getClusterJob(conf, finalKMeansOut, pointIn, clusterOut);
             System.exit(clusterJob.waitForCompletion(true) ? 0 : 1);
