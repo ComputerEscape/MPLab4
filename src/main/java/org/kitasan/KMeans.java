@@ -81,9 +81,9 @@ public class KMeans {
             Path kMeansOut = new Path(otherArgs[2]);
             Path clusterOut = new Path(otherArgs[3]);
             //File
-            Path tempKMeansOut = new Path(kMeansOut.getName()+"/temp");
+            Path tempKMeansOut = new Path(kMeansOut + "/temp");
             //Directory
-            Path finalKMeansOut = new Path(kMeansOut.getName()+"/final");
+            Path finalKMeansOut = new Path(kMeansOut + "/final");
             initKMeansOut(conf, centerIn, kMeansOut, tempKMeansOut);
             do {
                 clearKMeansOut(conf, finalKMeansOut);
