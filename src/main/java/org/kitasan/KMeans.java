@@ -3,12 +3,16 @@ package org.kitasan;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.kitasan.map.ClusterMapper;
 import org.kitasan.map.KMeansMapper;
+import org.kitasan.reduce.ClusterReducer;
 import org.kitasan.reduce.KMeansCombiner;
 import org.kitasan.reduce.KMeansReducer;
 import org.kitasan.util.CenterFileOperation;
@@ -40,9 +44,27 @@ public class KMeans {
         return job;
     }
 
-    private static Job getClusterJob(Configuration conf, Path centerIn, Path pointIn, Path out) throws IOException {
+    private static Job getClusterJob(Configuration conf, Path centerIn, Path pointIn, Path out) throws IOException, URISyntaxException {
         Job job = new Job(conf, "Cluster");
-        //TODO
+        job.setJarByClass(KMeans.class);
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(PairVectorDoubleInt.class);
+        job.setMapperClass(ClusterMapper.class);
+        job.setReducerClass(ClusterReducer.class);
+        FileInputFormat.addInputPath(job, pointIn);
+        FileOutputFormat.setOutputPath(job, out);
+        List<VectorDoubleWritable> centerList = new ArrayList<>();
+        CenterFileOperation.getCenterFromFile(job.getConfiguration(), centerIn, centerList, false);
+        String[] names = new String[centerList.size()];
+        for (int i=0; i<centerList.size(); ++i) {
+            String filename = "cluster" + i;
+            names[i] = filename;
+            MultipleOutputs.addNamedOutput(job, filename, TextOutputFormat.class, IntWritable.class, VectorDoubleWritable.class);
+        }
+        job.getConfiguration().set("mapreduce.output.textoutputformat.separator", ":");
+        job.getConfiguration().setStrings("filenames", names);
+        job.addCacheFile(new URI(centerIn.toString()));
         return job;
     }
 
@@ -52,6 +74,7 @@ public class KMeans {
             String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
             if (otherArgs.length != 4) {
                 System.err.println("Usage: <center-in> <point-in> <k-means-out> <cluster-out>");
+                System.exit(1);
             }
             Path centerIn = new Path(otherArgs[0]);
             Path pointIn = new Path(otherArgs[1]);
@@ -68,7 +91,7 @@ public class KMeans {
                 boolean flag = kMeansJob.waitForCompletion(true);
                 if (!flag) System.exit(1);
             } while(!check(conf, tempKMeansOut, finalKMeansOut));
-            Job clusterJob = getClusterJob(conf, finalKMeansOut, pointIn, clusterOut);
+            Job clusterJob = getClusterJob(conf, tempKMeansOut, pointIn, clusterOut);
             System.exit(clusterJob.waitForCompletion(true) ? 0 : 1);
         } catch (Exception e) {
             e.printStackTrace();
