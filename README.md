@@ -93,13 +93,58 @@ System.exit(clusterJob.waitForCompletion(true) ? 0 : 1);
 
 ## 选做
 
+上一阶段完成后，已经形成了最终的聚类中心，再迭代也不会改变。因此，要将原数据集中不同簇的数据划分到不同文件，只要继续以原数据集为输入，在 Mapper 中按照原方法对数据集再进行一次聚类，然后在 Reducer 中把每个 key 即聚类中心 ID 对应的所有 values 写到该聚类中心对应的输出文件中即可。聚类中心文件依然使用 `DistributedCache` 传递给 Mapper；Hadoop 的 `MultipleOutputs` 类提供了将数据写入到指定的多个输出文件的能力。
+
 ### Map
 
+输入：`[<v, pid>]`，输出：`[<clusterID, <v, pid>>]`
 
+与基本任务的 Map 阶段类似。不同的是，输出的 value 的第二个分量不表示数据点个数，而是该数据点的编号：
+
+```rust
+map(key, p) { // p 是一条数据
+    let (v, pid) = p; // 向量 v 是数据 p 的内容，pid 是数据 p 的编号
+    minDis = Double.MAX_VALUE;
+    index = -1;
+    for i=0 to centers.length {
+        dis = computeDist(v, centers[i]);
+        if dis < minDis {
+            minDis = dis;
+            index = i;
+        }
+    }
+    emit(index, (v, pid)); // 输出 pid 而不是 1
+}
+```
 
 ### Reduce
 
+输入：`[<clusterID, [<v, pid>]>]`，输出：`[<pid, v>]`（在每个 `clusterID` 对应的文件中）
 
+只要根据输入的聚类 ID 获取输出文件名，将每个数据条目的 ID 和向量内容输出到该文件中即可：
+
+```rust
+reduce(clusterID, values) {
+    f = getFileName(clusterID);
+    for each (v, pid) in values {
+        emitToFile(f, (pid, v));
+    }
+}
+```
+
+为了将输出写到指定的输出文件中，需要使用 `MultipleOutputs` 类。在创建 job 时，读取聚类中心文件，对每个聚类中心创建一个 named output，并将文件名通过 `Configuration` 传给 Reducer。注意必须在 `Reducer` 类的 `setup` 和 `cleanup` 两个方法中创建和**关闭** `MultipleOutputs` 对象，否则程序终止时输出可能还没有全部写入到磁盘上，造成结果不完整：
+
+```java
+@Override
+public void setup(Context context) {
+    mos = new MultipleOutputs<>(context);
+}
+
+@Override
+public void cleanup(Context _context) throws IOException, InterruptedException {
+    mos.close();
+}
+```
 
 ## 实验结果
 
