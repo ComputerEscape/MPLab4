@@ -85,7 +85,6 @@ public class KMeans {
             //Directory
             Path finalKMeansOut = new Path(kMeansOut + "/final");
             initKMeansOut(conf, centerIn, kMeansOut, tempKMeansOut);
-            int i = 0;
             do {
                 clearKMeansOut(conf, finalKMeansOut);
                 Job kMeansJob = getKMeansJob(conf, tempKMeansOut, pointIn, finalKMeansOut);

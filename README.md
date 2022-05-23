@@ -30,7 +30,7 @@ public class VectorDoubleWritable extends Vector<DoubleWritable> implements Writ
 
 * 同时还支持用`Text`或`String`类型初始化操作，格式形如`xxx,xxx,xxx,...,xxx`；
 
-* 还支持`Writable`和`Comparable`的接口操作，以及转化成字符串的操作。
+* 还支持`Writable`和`Comparable`的接口操作，比较精度为`1e-6`，以及转化成字符串的操作。
 
 ### PairVectorDoubleInt
 
@@ -105,20 +105,40 @@ System.exit(clusterJob.waitForCompletion(true) ? 0 : 1);
 
 在实验平台运行命令：
 
-` hadoop jar MPLab4/MPLab4.jar /data/2022s/kmeans/initial_centers /data/2022s/kmeans/dataset.data MPLab4/kmeans MPLab4/cluster`
+` hadoop jar MPLab4/MPLab4.jar /data/2022s/kmeans/initial_centers /data/2022s/kmeans/dataset.data MPLab4/kmeans_out MPLab4/cluster_out`
 
 ### 基本功能
 
+共迭代3轮。
 
+结果在`MPLab4/kmeans_out/final`中。
+
+![](img/res-1-1.png)
 
 ### 选做
 
+结果在`MPLab4/cluster_out`中。
 
+以`cluster0-r-00000`为例。
+
+![](img/res-1-2.png)
 
 ### WebUI执行报告
 
 #### 基本功能
 
+* 第一轮迭代。
 
+  ![](img/res-2-1.png)
+
+* 第二轮迭代。
+
+  ![](img/res-2-2.png)
+
+* 第三轮迭代。
+
+  ![](img/res-2-3.png)
 
 #### 选做
+
+![](img/res-2-4.png)
