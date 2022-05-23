@@ -90,8 +90,8 @@ public class VectorDoubleWritable extends Vector<DoubleWritable> implements Writ
         for (int i = 0; i < oSize; ++i) {
             double x = get(i).get();
             double y = o.get(i).get();
-            if (y-x > 1e-7) return -1;
-            if (x-y > 1e-7) return 1;
+            if (y-x > 1e-6) return -1;
+            if (x-y > 1e-6) return 1;
         }
         return 0;
     }
