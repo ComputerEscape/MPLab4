@@ -17,6 +17,7 @@ public class KMeansCombiner extends Reducer<IntWritable, PairVectorDoubleInt, In
         int n = 0;
         for (PairVectorDoubleInt i: values) {
             if (flag) {
+                i.getKey().multiply(i.getValue().get());
                 pm.add(i.getKey());
             }else {
                 int vecSize = i.getKey().size();

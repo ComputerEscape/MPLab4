@@ -85,6 +85,7 @@ public class KMeans {
             //Directory
             Path finalKMeansOut = new Path(kMeansOut + "/final");
             initKMeansOut(conf, centerIn, kMeansOut, tempKMeansOut);
+            int i = 0;
             do {
                 clearKMeansOut(conf, finalKMeansOut);
                 Job kMeansJob = getKMeansJob(conf, tempKMeansOut, pointIn, finalKMeansOut);
@@ -123,7 +124,7 @@ public class KMeans {
     private static boolean check(Configuration conf, Path centerIn, Path kMeansOut) throws IOException {
         List<VectorDoubleWritable> inCenter = new ArrayList<>();
         List<VectorDoubleWritable> outCenter = new ArrayList<>();
-        CenterFileOperation.getCenterFromDir(conf, centerIn, inCenter);
+        CenterFileOperation.getCenterFromFile(conf, centerIn, inCenter, false);
         CenterFileOperation.getCenterFromDir(conf, kMeansOut, outCenter);
         boolean flag = true;
         for (int i = 0; i < inCenter.size(); ++i) {
