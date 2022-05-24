@@ -81,15 +81,78 @@ System.exit(clusterJob.waitForCompletion(true) ? 0 : 1);
 
 ### Map
 
+输入：`<p, vector_p>`
 
+输出：`<cluster_ID, <vetcor_p, 1>>`
+
+执行`map`之前，通过分布式缓存传递`cluster`信息，在`setup`函数里读取各个`cluster`点的信息并储存，便于共享和使用。
+
+在`map`函数里，通过输入的内容来获取输入点的坐标，并通过计算其与各个`cluster`的距离，找出最短距离点，发送`<cluster_ID, <vetcor_p, 1>>`
+
+```Java
+setup() {
+    all clusters -> centers
+}
+```
+
+```Java
+map(p, vetcor_p) {
+    minDis = Double.MAXVALUE
+    cluster_ID = -1
+    for i=0 to centers.length {
+        dis = getDistance(p, centers[i])
+        if dis < minDis {
+            minDis = dis
+            cluster_ID = centers[i].ID
+            //遍历centers，找出距离p最短的cluster点
+        }
+    }
+    emit(cluster_ID, <vector_p, 1>)
+}
+```
 
 ### Combine
 
+输入：`<cluster_ID, [<vetcor_p, n>]>`
 
+输出：`<cluster_ID, <vetcor_p, n>>`
+
+将中间数据进行合并处理，以减少`reduce`计算量以及信息传输量。
+`combine`不能改变输入输出键值对的类型，本质上是在`reduce`之前将大量的数据先进行一次合并，方便传输和后续运算。
+
+```
+reduce(cluster_ID, [<vetcor_p, n>]) {
+    vetcor_p = 0.0
+    n = 0
+    for item in [<vetcor_p, n>] {
+        vetcor_p += item.vector_p * item.n
+        n += item.n
+    }
+    vetcor_p /= n
+    emit(cluster_ID, <vetcor_p, n>)
+}
+```
 
 ### Reduce
 
+输入：`<cluster_ID, [<vetcor_p, n>]>`
 
+输出：`<cluster_ID, vetcor_p>`
+
+`reduce`和`combine`一样，都是合并并计算各个向量的均值，基本相同，区别仅在于`combine`用于中间处理，而`reduce`用于输出结果，因此`emit`有所不同。
+
+```
+reduce(cluster_ID, [<vetcor_p, n>]) {
+    vetcor_p = 0.0
+    n = 0
+    for iteem in [<vetcor_p, n>] {
+        vetcor_p += item.vector_p * item.n
+        n += item.n
+    }
+    vetcor_p /= n
+    emit(cluster_ID, vector_p)
+}
+```
 
 ## 选做
 
